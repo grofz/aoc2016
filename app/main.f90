@@ -6,6 +6,7 @@ program main
   use day1606_mod, only: day1606
   use day1607_mod, only: day1607
   use day1608_mod, only: day1608
+  use day1609_mod, only: day1609
   use day1610_mod, only: day1610
   implicit none
 
@@ -16,6 +17,7 @@ program main
   !call day1604('./inp/04/input.txt')
   !call day1606('./inp/06/input.txt')
   !call day1607('./inp/07/input.txt')
-  call day1608('./inp/08/input.txt')
+  !call day1608('./inp/08/input.txt')
+  call day1609('./inp/09/input.txt')
   !call day1610('./inp/input.txt')
 end program main
