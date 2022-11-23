@@ -6,6 +6,7 @@ module day1611_mod
         integer :: ie ! position of elevator
         integer :: t  ! step (time)
         logical :: visited = .false.
+        integer :: id=1, previd=0
     contains
         procedure :: allowed => state_allowed, print => state_print
         procedure, private :: state_gt_state, state_eq_state
@@ -21,15 +22,23 @@ module day1611_mod
 contains
     
     subroutine day1611(problem)
-        character(len=*), intent(in) :: problem
-        type(state_t) :: init_state, final_state
+        character(len=*), intent(in) :: problem(2)
+        type(state_t) :: init_state(2), final_state(2)
+        real :: t0, t1
 
-        init_state = state_t(problem)
-        print *, init_state % allowed()
-        call init_state%print()
+        call cpu_time(t0)
+        init_state(1) = state_t(problem(1))
+        init_state(2) = state_t(problem(2))
+        call find_process(init_state(1), final_state(1))
         print *
-        call find_process(init_state, final_state)
-        print *, 'final ',final_state%t
+        call find_process(init_state(2), final_state(2))
+        print *
+        associate(ans1=>final_state(1)%t, ans2=>final_state(2)%t)
+          print '("Answer 11/1 ",i0,l2)', ans1, ans1==31
+          print '("Answer 11/2 ",i0,l2)', ans2, ans2==55
+        end associate
+        call cpu_time(t1)
+        print '("Time taken ",g0)', t1-t0
     end subroutine
 
 
@@ -47,86 +56,59 @@ contains
         nstates = 0
         call add_state(arr, nstates, init_state, was_added)
         current = arr(1)
+        current%id = 1
         MAINLOOP: do
+            ! every item has been moved to the top level
             if (all(current%ip==MAXLEVEL) .and. current%ie==MAXLEVEL) exit MAINLOOP
 
-            ! update state by moving one/two items up-down
+            ! update state by moving one/two items up/down
             do i=1, size(current%ip)
             do j=i, size(current%ip) ! j >= i
                 ! can not move item not on the current floor
                 if (current%ip(i)/=current%ie .or. current%ip(j)/=current%ie) cycle
                 do dir= 1,-1,-2
+                    ! can not move outside 1-4 floor range
                     if (current%ie+dir < 1 .or. current%ie+dir > MAXLEVEL) cycle
 
-                    ! do not move same chip and generator down from 4th floor
+                    ! Heuristic rules (to speed-up)
+                    ! 1. do not move the same chip and generator down
                     if (dir==-1 .and. mod(j,2)==0 .and. j-i==1) then
                         !print *, 'aaa'
-                        if (current%ie==MAXLEVEL) cycle
                         cycle
                     end if
 
-                    ! do not move up same chip and generator, if
-                    ! another chip and generator are on the same floor
-                    if (mod(j,2)==0 .and. j-i==1) then
-                        symmetry_found = .false.
-                        do z=i-2,1,-2
-                            if (current%ip(z)==current%ie .and. &
-                                current%ip(z+1)==current%ie) symmetry_found=.true.
-                        end do
-                        if (symmetry_found) then
-                           !print *, 'AAA',i,j
-                           !call current%print()
-                            cycle
-                        end if
-                    end if
-
-                    ! do not move chip if same state chip is on the same
-                    ! floor
-                    if (i==j .and. mod(i,2)/=0) then
-                        symmetry_found = .false.
-                        do z=i-2,1,-2
-                            if (current%ip(z)==current%ie .and. &
-                                 current%ip(z+1)==current%ip(i+1)) symmetry_found = .true.
-                        end do
-                        if (symmetry_found) cycle
-                    end if
-
-                    ! do not move generator if same state generator on same floor
-                    if (i==j .and. mod(i,2)==0) then
-                        symmetry_found = .false.
-                        do z=i-2,2,-2
-                            if (current%ip(z)==current%ie .and. &
-                                 current%ip(z-1)==current%ip(i-1)) symmetry_found = .true.
-                        end do
-                        if (symmetry_found) cycle
-                    end if
-
-                    ! do not move two chips down
+                    ! 2. do not move two chips down
                     if (dir==-1 .and. mod(i,2)/=0 .and. mod(j,2)/=0 .and. i/=j) cycle
 
-                    ! do not move generators down
-                    !if (dir==-1 .and. mod(i,2)==0 .and. mod(j,2)==0) cycle
+                    ! 3. do not move two generators down
                     if (i/=j .and. dir==-1 .and. mod(i,2)==0 .and. mod(j,2)==0) cycle
 
-
+                    ! try to move items
                     new = current
                     new%ie = current%ie + dir
                     new%ip(i) = current%ip(i) + dir
                     if (j/=i) new%ip(j) = current%ip(j) + dir
+
                     ! skip not allowed configurations
                     if (.not. new%allowed()) cycle
+
+                    ! add new configuration at the end of an array
                     new%t = current%t + 1
+                    new%previd = current%id
                     call add_state(arr, nstates, new, was_added)
                 end do
             end do
             end do
 
-            ! find new unvisited state/ mark current as visited
+            ! find new unvisited state/mark current as visited
             mintime = huge(mintime)
             idmin = 0
             do i=1, nstates
-                if (current==arr(i)) arr(i)%visited=.true.
                 if (arr(i)%visited) cycle
+                if (current==arr(i)) then
+                    arr(i)%visited=.true.
+                    cycle
+                end if
                 if (arr(i)%t < mintime) then
                     mintime = arr(i)%t
                     idmin = i
@@ -134,23 +116,26 @@ contains
             end do
             if (idmin==0) error stop 'can not find next move'
             current = arr(idmin)
+            current%id = idmin
 
-            j = 0
-            do i=1, nstates
-                if (arr(i)%visited) cycle
-                j=j+1
-                !call arr(i)%print()
-            end do
-           !print *,'lrft =',j 
-           !call current%print()
+            ! print progress of the search
             if (current%t > last) then
                 last = current%t
                 call current%print()
-                print *, 'size ',nstates
+                print *, 'number of states ',nstates
             end if
 
         end do MAINLOOP
         final_state = current
+
+        ! Print the path
+        print '("Solution found:")'
+        i = final_state%id
+        do
+            call arr(i)%print()
+            i = arr(i)%previd
+            if (i==0) exit
+        end do
     end subroutine
 
 
@@ -210,7 +195,6 @@ contains
         type(state_t), allocatable :: wrk(:)
 
         ! Add state "new" to the array of states (if not already there)
-        ! Keep states in the array sorted
 
         ! Increase array size (if needed)
         if (.not. allocated(arr)) then
@@ -223,22 +207,18 @@ contains
             call move_alloc(wrk, arr)
         end if
 
-        ! Todo - I should implement binary search here...
+        ! Search if new is present
         was_added = .true.
-        do i=1,n
+        do i=n,1,-1
             if (arr(i)==new) then
                 was_added = .false.
                 exit
-            else if (new > arr(i)) then
-                cycle
             end if
-            ! inserting new at position "i"
-            arr(i+1:n+1) = arr(i:n)
-            arr(i) = new
-            exit
         end do
-        if (i==n+1) arr(n+1) = new ! adding new at the end
-        if (was_added) n = n + 1
+        if (was_added) then
+            n = n + 1
+            arr(n) = new
+        end if
     end subroutine
 
 
@@ -248,7 +228,8 @@ contains
         integer :: ilev, n, ngen, natoms, iatom
 
         natoms = size(this%ip)
-        if (mod(natoms,2)/=0) error stop 'state allowed - ip array size must be even'
+        if (mod(natoms,2)/=0) &
+        &   error stop 'state allowed - ip array size must be even'
         natoms = natoms/2
         allowed = .true.
 
@@ -271,6 +252,7 @@ contains
     end function
 
 
+    ! not needed
     logical function state_gt_state(a, b) result (gt)
         class(state_t), intent(in) :: a, b
         
@@ -291,15 +273,40 @@ contains
     logical function state_eq_state(a, b) result(eq)
         class(state_t), intent(in) :: a, b
         
-        integer :: i
+        integer :: ilev, j
+        integer :: agen(MAXLEVEL), bgen(MAXLEVEL), ach(MAXLEVEL), bch(MAXLEVEL)
+        integer :: aboth(MAXLEVEL), bboth(MAXLEVEL)
+
         if (size(a%ip) /= size(b%ip)) error stop 'state_eq_state - different operand ip size'
-        eq = all(a%ip==b%ip) .and. a%ie==b%ie
+        ach = 0; bch = 0
+        agen = 0; bgen = 0
+        aboth = 0; bboth = 0
+        do ilev=1,MAXLEVEL
+            do j=1,size(a%ip)-1,2
+                if (a%ip(j)==ilev .and. a%ip(j+1)/=ilev) then
+                    ach(ilev) = ach(ilev)+1
+                else if (a%ip(j)/=ilev .and. a%ip(j+1)==ilev) then
+                    agen(ilev) = agen(ilev)+1
+                else if (a%ip(j)==ilev .and. a%ip(j+1)==ilev) then
+                    aboth(ilev) = aboth(ilev)+1
+                end if
+                if (b%ip(j)==ilev .and. b%ip(j+1)/=ilev) then
+                    bch(ilev) = bch(ilev)+1
+                else if (b%ip(j)/=ilev .and. b%ip(j+1)==ilev) then
+                    bgen(ilev) = bgen(ilev)+1
+                else if (b%ip(j)==ilev .and. b%ip(j+1)==ilev) then
+                    bboth(ilev) = bboth(ilev)+1
+                end if
+            end do
+        end do
+        eq = all(ach==bch) .and. all(agen==bgen) .and. all(aboth==bboth) &
+        &    .and. a%ie == b%ie
     end function
 
 
     subroutine state_print(this)
         class(state_t), intent(in) :: this
-        print '(i0,"  EL-",i1,1x,*("["i1,"]{",i1,"}",:,2x))', &
+        print '(i3,"  EL-",i1,1x,*("["i1,"]{",i1,"}",:,2x))', &
         &   this%t, this%ie, this%ip
     end subroutine
 end module day1611_mod

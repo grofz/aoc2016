@@ -21,5 +21,5 @@ program main
   !call day1608('./inp/08/input.txt')
   !call day1609('./inp/09/input.txt')
   !call day1610('./inp/input.txt')
-  call day1611('big') ! real|test
+  call day1611(['real','big ']) ! big|real|test
 end program main
