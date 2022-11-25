@@ -9,6 +9,7 @@ program main
   use day1609_mod, only: day1609
   use day1610_mod, only: day1610
   use day1611_mod, only: day1611
+  use day1612_mod, only: day1612
   implicit none
 
   !call day1601('./inp/01/input.txt')
@@ -21,5 +22,6 @@ program main
   !call day1608('./inp/08/input.txt')
   !call day1609('./inp/09/input.txt')
   !call day1610('./inp/input.txt')
-  call day1611(['real','big ']) ! big|real|test
+  !call day1611(['real','big ']) ! big|real|test
+  call day1612('inp/12/input.txt') ! test.txt
 end program main
