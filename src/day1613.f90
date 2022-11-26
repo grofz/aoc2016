@@ -28,7 +28,7 @@ contains
         maze = maze_t(numbers)
         call maze%print()
         call maze%route()
-        call maze%printmh()
+        !call maze%printmh()
         ans1 = maze%mh(maze%target(1), maze%target(2))
         ans2 = count(maze%mh>=0 .and. maze%mh<=50)
         print '("Answer 13/1 ",i0,l2)', ans1, ans1==86
@@ -41,7 +41,7 @@ contains
 
         integer :: mxlim(2)
 
-        mxlim = 2*numbers(2:3)
+        mxlim = 2*numbers(2:3) ! assuming that twice will be enough
         allocate(new%mh(0:mxlim(1),0:mxlim(2)))
         new%mh = -1
         new%number = numbers(1)
