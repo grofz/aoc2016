@@ -12,6 +12,7 @@ program main
   use day1612_mod, only: day1612
   use day1613_mod, only: day1613
   use day1615_mod, only: day1615
+  use day1616_mod, only: day1616
   implicit none
 
   !call day1601('./inp/01/input.txt')
@@ -27,5 +28,7 @@ program main
   !call day1611(['real','big ']) ! big|real|test
   !call day1612('inp/12/input.txt') 
   !call day1613([1364,31,39]) ! test case: [10,7,4] 
-  call day1615('inp/15/input.txt') ! test.tx
+  !call day1615('inp/15/input.txt') ! test.tx
+  call day1616('10111011111001111', 272, 35651584) 
+
 end program main
