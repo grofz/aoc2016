@@ -1,8 +1,6 @@
-!TODO list
-! - remove repeating code in {hole|data}_{firstngb|nextngb}
 module day1622_mod
     use parse_mod, only : split_nonempty, read_strings, string_t
-    use djikstra_mod
+    use djikstra_mod, only : djikstra_search, djikstra_node_at, djikstra_node_ptr
     implicit none
 
     integer, parameter :: TYPE_FREE=1, TYPE_FIXED=2
@@ -19,7 +17,6 @@ module day1622_mod
 
     type grid_t
         integer, allocatable :: g(:,:) ! node-type
-        integer, allocatable :: disksize(:,:) 
         integer :: hole(2), data(2)
     contains
         procedure :: print => grid_print
@@ -28,25 +25,20 @@ module day1622_mod
         module procedure grid_new
     end interface
 
+    ! Types for state-keeping in Djikstra's module
     type, extends(djikstra_node_at) :: hole_t
         integer :: hole(2)
         integer :: data(2)
         type(grid_t), pointer :: grid => null()
-        integer :: flag=-1
         integer :: target(2)
     contains
-        procedure :: firstngb => hole_firstngb
-        procedure :: nextngb => hole_nextngb
-        procedure :: isequal => hole_isequal
-        procedure :: isnull => hole_isnull
+        procedure, non_overridable :: nextngb
+        procedure, non_overridable :: isequal
         procedure :: istarget => hole_istarget
     end type
 
     type, extends(hole_t) :: data_t
     contains
-        procedure :: firstngb => data_firstngb
-        procedure :: nextngb => data_nextngb
-        procedure :: isequal => data_isequal
         procedure :: istarget => data_istarget
     end type
 
@@ -61,10 +53,9 @@ contains
         type(djikstra_node_ptr), allocatable :: dwrk(:)
         integer :: i, j, n, ans1, ans2
 
+        ! Part 1
         nodes = read_nodes(file)
         n = size(nodes)
-
-        ! Part 1
         ans1 = 0
         do i=1, n
             if (nodes(i)%used == 0) then
@@ -75,12 +66,13 @@ contains
                 if (i==j) cycle
                 if (nodes(j)%avail < nodes(i)%used) cycle
                 ans1 = ans1 + 1
+                ! assumming that node is free, for current input works fine
                 nodes(i)%type = TYPE_FREE
             end do
         end do
         print '("Answer 22/1 ",i0,l2)', ans1, ans1==941
 
-        ! Part 2
+        ! Part 2 - set-up Djikstra's search
         grid = grid_t(nodes)
         call grid%print()
 
@@ -93,6 +85,10 @@ contains
         print '("Answer 22/2 ",i0,l2)', ans2, ans2==249
     end subroutine day1622
 
+
+    ! =============
+    ! Parsing input
+    ! =============
 
     type(grid_t) function grid_new(nodes) result(new)
         type(node_t), intent(in) :: nodes(:)
@@ -115,12 +111,9 @@ contains
         new%data = [maxx, 0]
 
         allocate(new%g(minx-1:maxx+1, miny-1:maxy+1))
-        allocate(new%disksize(minx-1:maxx+1, miny-1:maxy+1))
         new%g = TYPE_FIXED
-        new%disksize = 0
         do i=1, size(nodes)
             new%g(nodes(i)%pos(1), nodes(i)%pos(2)) = nodes(i)%type
-            new%disksize(nodes(i)%pos(1), nodes(i)%pos(2)) = nodes(i)%size
         end do
     end function grid_new
 
@@ -216,199 +209,108 @@ contains
     end function str_to_number
 
 
-    subroutine hole_firstngb(node, node_ngb, distance)
-        class(hole_t), intent(in) :: node
-        class(djikstra_node_at), intent(out), allocatable :: node_ngb
-        integer, intent(out) :: distance
+    ! =============================
+    ! "data_t" and "hole_t" methods
+    ! =============================
 
-        integer :: i, pos(2)
-        allocate(node_ngb, source=node)
-        select type(node_ngb)
-        class is (hole_t)
-            do i = 1, 4
-                pos = node%hole + DIRS(:,i)
-                if (node%grid%g(pos(1),pos(2))/=TYPE_FREE) cycle
-                if (all(node%data==pos)) cycle
-                ! position is allowed
-                node_ngb%hole = pos
-                node_ngb%flag = i
-                exit
-            end do
-            ! return null state if nowhere to go
-            if (i==4+1) node_ngb%flag = -1
-        class default
-            error stop 'hole_firstngb - unsupported type'
-        end select
-        distance = 1
-    end subroutine
-
-
-    subroutine hole_nextngb(node, node_ngb1, node_ngb2, distance)
-        class(hole_t), intent(in) :: node
-        class(djikstra_node_at), intent(in) :: node_ngb1
-        class(djikstra_node_at), intent(out), allocatable :: node_ngb2
-        integer, intent(out) :: distance
-
-        integer :: i, pos(2), i0
-
-        select type(node_ngb1)
-        class is (hole_t)
-            i0 = node_ngb1 % flag
-        class default
-            error stop 'hole_nextngb - unsupported type'
-        end select
-
-        allocate(node_ngb2, source=node)
-        select type(node_ngb2)
-        class is (hole_t)
-            if (i0 < 1) error stop 'hole_nextngb - previous ngb invalid'
-            do i = i0+1, 4
-                pos = node%hole + DIRS(:,i)
-                if (node%grid%g(pos(1),pos(2))/=TYPE_FREE) cycle
-                if (all(node%data==pos)) cycle
-                ! position is allowed
-                node_ngb2%hole = pos
-                node_ngb2%flag = i
-                exit
-            end do
-            ! return null state if nowhere to go
-            if (i==4+1) node_ngb2%flag = -1
-        class default
-            error stop 'hole_nextngb - unsupported type arg2'
-        end select
-        distance = 1
-    end subroutine
-
-    logical function hole_isequal(anode, bnode)
+    logical function isequal(anode, bnode)
         class(hole_t), intent(in) :: anode
         class(djikstra_node_at), intent(in) :: bnode
 
         select type(bnode)
         class is (hole_t)
-            hole_isequal=all(anode%hole==bnode%hole)
+            isequal=all(anode%hole==bnode%hole)
+        class is (data_t)
+            isequal=all(anode%hole==bnode%hole) .and. &
+            &       all(anode%data==bnode%data)
         class default
-            error stop 'hole_isequal - second arg type not supported'
+            error stop 'isequal - second arg type is not supported'
         end select
     end function
 
-    logical function hole_isnull(node)
-        class(hole_t), intent(in) :: node
-        hole_isnull = node%flag==-1
-    end function
 
     logical function hole_istarget(node)
         class(hole_t), intent(in) :: node
         hole_istarget = all(node%hole==node%target)
     end function
 
-
-
-    logical function data_isequal(anode, bnode)
-        class(data_t), intent(in) :: anode
-        class(djikstra_node_at), intent(in) :: bnode
-
-        select type(bnode)
-        class is (data_t)
-            data_isequal=all(anode%hole==bnode%hole) .and. &
-            &            all(anode%data==bnode%data)
-        class default
-            error stop 'data_isequal - second arg type not supported'
-        end select
+    logical function data_istarget(node)
+        class(data_t), intent(in) :: node
+        data_istarget = all(node%data==node%target)
     end function
 
-    subroutine data_firstngb(node, node_ngb, distance)
-        class(data_t), intent(in) :: node
+
+    subroutine nextngb(node, flag, node_ngb, distance)
+        class(hole_t), intent(in) :: node ! current state
+        integer, intent(inout) :: flag    ! "0" on entry: first ngb, "0" on return: no more ngbs
         class(djikstra_node_at), intent(out), allocatable :: node_ngb
         integer, intent(out) :: distance
-
+!
+! For both hole and data movement!
+! Return the first/next step with respect to state "node".
+! Return also the movement cost from "node" to "node_ngb" ("distance").
+!
+        integer :: i, pos(2), i0
         type(djikstra_node_ptr), allocatable :: djwrk(:)
         type(hole_t) :: hole_start
-        integer :: i, pos(2)
+
+        if (flag==0) then
+            ! First neighbour
+            i0 = 0
+        else
+            i0 = flag
+        end if
+        if (i0<0 .or. i0>4) error stop 'nextngb - invalid flag'
 
         allocate(node_ngb, source=node)
         select type(node_ngb)
+        class is (hole_t)
+            ! Hole can be moved over every free node (except of the data node)
+            do i = i0+1, 4
+                pos = node%hole + DIRS(:,i)
+                if (node%grid%g(pos(1),pos(2)) /= TYPE_FREE) cycle
+                if (all(node%data==pos)) cycle
+                ! next position is allowed
+                node_ngb%hole = pos
+                flag = i
+                exit
+            end do
+            ! return null state if nowhere to go
+            if (i==4+1) flag = 0
+            ! moving hole takes always just one step
+            distance = 1
+
         class is (data_t)
-            do i = 1, 4
+            ! Data can be moved over every free node
+            do i = i0+1, 4
                 pos = node%data + DIRS(:,i)
-                if (node%grid%g(pos(1),pos(2))/=TYPE_FREE) cycle
-                !if (all(node%data==pos)) cycle
-                ! position is allowed
+                if (node%grid%g(pos(1),pos(2)) /= TYPE_FREE) cycle
+                ! next position is allowed
                 node_ngb%data = pos
-                node_ngb%flag = i
+                flag = i
                 exit
             end do
             if (i==4+1) then
                 ! return null state if nowhere to go
-                node_ngb%flag = -1
+                flag = 0
                 distance = huge(distance)
             else
-                ! how many steps to move a hole
+                ! Moving data needs moving a hole where data are heading first...
+                ! Djikstra's sub-problem: how many steps to move a hole?
                 hole_start%grid => node%grid
                 hole_start%hole = node%hole
                 hole_start%data = node%data
                 hole_start%target = node_ngb%data
                 call djikstra_search(djwrk, hole_start, distance)
+                ! ... and then moving the data
                 distance = distance + 1
+                ! hole remains where the data were
                 node_ngb%hole = node%data
             end if
 
         class default
-            error stop 'data_firstngb - unsupported type'
+            error stop 'nextngb - unsupported type of arg2'
         end select
     end subroutine
-
-    subroutine data_nextngb(node, node_ngb1, node_ngb2, distance)
-        class(data_t), intent(in) :: node
-        class(djikstra_node_at), intent(in) :: node_ngb1
-        class(djikstra_node_at), intent(out), allocatable :: node_ngb2
-        integer, intent(out) :: distance
-
-        type(djikstra_node_ptr), allocatable :: djwrk(:)
-        type(hole_t) :: hole_start
-        integer :: i, pos(2), i0
-
-        select type(node_ngb1)
-        class is (data_t)
-            i0 = node_ngb1 % flag
-        class default
-            error stop 'data_nextngb - unsupported type'
-        end select
-
-        allocate(node_ngb2, source=node)
-        select type(node_ngb2)
-        class is (data_t)
-            if (i0 < 1) error stop 'data_nextngb - previous ngb invalid'
-            do i = i0+1, 4
-                pos = node%data + DIRS(:,i)
-                if (node%grid%g(pos(1),pos(2))/=TYPE_FREE) cycle
-                !if (all(node%data==pos)) cycle
-                ! position is allowed
-                node_ngb2%data = pos
-                node_ngb2%flag = i
-                exit
-            end do
-            ! return null state if nowhere to go
-            if (i==4+1) then
-                node_ngb2%flag = -1
-                distance = huge(distance)
-            else
-                ! how many steps to move a hole
-                hole_start%grid => node%grid
-                hole_start%hole = node%hole
-                hole_start%data = node%data
-                hole_start%target = node_ngb2%data
-                call djikstra_search(djwrk, hole_start, distance)
-                distance = distance + 1
-                node_ngb2%hole = node%data
-            end if
-        class default
-            error stop 'hole_nextngb - unsupported type arg2'
-        end select
-    end subroutine
-
-    logical function data_istarget(node)
-        class(data_t), intent(in) :: node
-        data_istarget = all(node%data==node%target)
-    end function
 
 end module day1622_mod

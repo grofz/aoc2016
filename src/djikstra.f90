@@ -1,3 +1,6 @@
+! TO-DO storing states in an array is ineffective
+! better structure should be added (e.g. a priority queue)
+
 module djikstra_mod
     implicit none
     private
@@ -9,27 +12,18 @@ module djikstra_mod
         logical :: visited = .false.
         integer :: d = huge(dummy_int)
     contains
-        procedure(firstngb_ai), deferred :: firstngb
         procedure(nextngb_ai), deferred :: nextngb
         procedure(isequal_ai), deferred :: isequal
-        procedure(isnull_ai), deferred :: isnull
         procedure(istarget_ai), deferred :: istarget
     end type
 
     abstract interface
-        subroutine firstngb_ai(node, node_ngb, distance)
+        subroutine nextngb_ai(node, flag, node_ngb, distance)
             import djikstra_node_at
             implicit none
             class(djikstra_node_at), intent(in) :: node
+            integer, intent(inout) :: flag !"0" on entry: first ngb, "0" on return: no more ngb
             class(djikstra_node_at), intent(out), allocatable :: node_ngb
-            integer, intent(out) :: distance
-        end subroutine
-
-        subroutine nextngb_ai(node, node_ngb1, node_ngb2, distance)
-            import djikstra_node_at
-            implicit none
-            class(djikstra_node_at), intent(in) :: node, node_ngb1
-            class(djikstra_node_at), intent(out), allocatable :: node_ngb2
             integer, intent(out) :: distance
         end subroutine
 
@@ -40,12 +34,6 @@ module djikstra_mod
         end function
 
         logical function istarget_ai(node)
-            import djikstra_node_at
-            implicit none
-            class(djikstra_node_at), intent(in) :: node
-        end function
-
-        logical function isnull_ai(node)
             import djikstra_node_at
             implicit none
             class(djikstra_node_at), intent(in) :: node
@@ -63,7 +51,7 @@ contains
         class(djikstra_node_at), intent(in) :: startnode
         integer, intent(out) :: shortest_d
 
-        integer :: n,  i, curr_i, ngb_i, d
+        integer :: n,  i, curr_i, ngb_i, d, flag
         class(djikstra_node_at), allocatable :: ngb, ngb2
         type(djikstra_node_ptr), allocatable :: nodes1(:)
 
@@ -93,16 +81,14 @@ contains
             end if
 
             ! Find and process all neighbors of the current node
-            call nodes(curr_i)%ptr%firstngb(ngb, d)
+            flag = 0
             do
-                if (ngb%isnull()) exit
+                call nodes(curr_i)%ptr%nextngb(flag, ngb, d)
+                if (flag==0) exit
                 call addnode_unique(ngb, nodes, n)
                 ngb_i = findnode(ngb, nodes, n)
                 d = d + nodes(curr_i)%ptr%d
                 if (nodes(ngb_i)%ptr%d > d) nodes(ngb_i)%ptr%d = d
-
-                call nodes(curr_i)%ptr%nextngb(ngb, ngb2, d)
-                call move_alloc(ngb2, ngb)
             end do
 
             ! Mark current node as visited
