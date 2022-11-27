@@ -11,7 +11,7 @@
     implicit none
     private
     public string_t
-    public read_strings, split
+    public read_strings, split, split_nonempty
     public read_numbers, read_pattern
     public unique_sort
     !public read_pattern
@@ -50,7 +50,6 @@
       if (.not. allocated(this%str)) error stop 'string_to_int - error, string unallocated'
       read(this%str,*) int
     end function string_to_int128
-
 
 
 
@@ -118,6 +117,33 @@
       end subroutine expand
 
     end subroutine split
+
+
+
+    subroutine split_nonempty(str, separator, items)
+      character(len=*), intent(in) :: str, separator
+      type(string_t), intent(out), allocatable :: items(:)
+!
+! Split first. Then remove empty strings
+!
+      type(string_t), allocatable :: items0(:)
+      integer :: i, n, j
+
+      call split(str, separator, items0)
+      n = 0
+      do i=1, size(items0)
+        if (len_trim(items0(i)%str)/=0) n = n + 1
+      end do
+      allocate(items(n))
+      j = 0
+      do i=1, size(items0)
+        if (len_trim(items0(i)%str)==0) cycle
+        j = j + 1
+        items(j) = string_t(items0(i)%str)
+      end do
+if (j /= n) error stop 'split_nonempty - check failed'
+
+    end subroutine split_nonempty
 
 
 

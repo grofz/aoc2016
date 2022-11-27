@@ -14,23 +14,26 @@ program main
   use day1613_mod, only: day1613
   use day1615_mod, only: day1615
   use day1616_mod, only: day1616
+  use day1622_mod, only: day1622
   implicit none
 
-  !call day1601('./inp/01/input.txt')
-  !call day1602('./inp/02/input.txt')
-  !call day1602('./inp/02/test.txt')
-  !call day1603('./inp/03/input.txt')
-  !call day1604('./inp/04/input.txt')
-  call day1605('reyedfim') ! test case: 'abc'
-  !call day1606('./inp/06/input.txt')
-  !call day1607('./inp/07/input.txt')
-  !call day1608('./inp/08/input.txt')
-  !call day1609('./inp/09/input.txt')
-  !call day1610('./inp/input.txt')
-  !call day1611(['real','big '])    ! big|real|test
-  !call day1612('inp/12/input.txt') 
-  !call day1613([1364,31,39])       ! test case: [10,7,4] 
-  !call day1615('inp/15/input.txt') ! test.txt
-  !call day1616('10111011111001111', 272, 35651584) 
+  goto 22
+  01 call day1601('./inp/01/input.txt')
+  02 call day1602('./inp/02/input.txt')
+  03 call day1603('./inp/03/input.txt')
+  04 call day1604('./inp/04/input.txt')
+  05 call day1605('reyedfim') ! test case: 'abc'
+  06 call day1606('./inp/06/input.txt')
+  07 call day1607('./inp/07/input.txt')
+  08 call day1608('./inp/08/input.txt')
+  09 call day1609('./inp/09/input.txt')
+  10 call day1610('./inp/10/input.txt')
+  11 call day1611(['real','big '])    ! big|real|test
+  12 call day1612('inp/12/input.txt') 
+  13 call day1613([1364,31,39])       ! test case: [10,7,4] 
+  15 call day1615('inp/15/input.txt') ! test.txt
+  16 call day1616('10111011111001111', 272, 35651584) 
+  !22 call day1622('inp/22/test.txt')
+  22 call day1622('inp/22/input.txt')
 
 end program main
