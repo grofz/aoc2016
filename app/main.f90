@@ -15,10 +15,11 @@ program main
   use day1614_mod, only: day1614
   use day1615_mod, only: day1615
   use day1616_mod, only: day1616
+  use day1617_mod, only: day1617
   use day1622_mod, only: day1622
   implicit none
 
-  goto 14
+  goto 17
   01 call day1601('./inp/01/input.txt')
   02 call day1602('./inp/02/input.txt')
   03 call day1603('./inp/03/input.txt')
@@ -33,10 +34,10 @@ program main
   12 call day1612('inp/12/input.txt') 
   13 call day1613([1364,31,39])       ! test case: [10,7,4] 
   14 call day1614('jlmsuwbz') ! test case: "abc"
-  stop
   15 call day1615('inp/15/input.txt') ! test.txt
   16 call day1616('10111011111001111', 272, 35651584) 
-  !22 call day1622('inp/22/test.txt')
-  22 call day1622('inp/22/input.txt')
+  17 call day1617('dmypynyp') ! 'ihgpwlah', 'kglvqrro', 'ulqzkmiv'
+  stop
+  22 call day1622('inp/22/input.txt') ! test.txt
 
 end program main
