@@ -1,7 +1,7 @@
 module day1605_mod
     implicit none
     private
-    public day1605, md5
+    public day1605, md5, int2str
 
     interface 
         character*32 function md5(string)
@@ -73,8 +73,8 @@ contains
             write(*,'(a,i9,3x,a,4x,a32)',advance='no') achar(13),i/10000,pass,hash 
             if (cfound == PASSSIZE) exit
             hash = md5(key//int2str(i))
-            !if (hash(1:5)/='00000') cycle
-            if (hash(1:5)/='     ') cycle
+            if (hash(1:5)/='00000') cycle
+            !if (hash(1:5)/='     ') cycle
 
             select case(method)
             case(1)
@@ -241,8 +241,8 @@ h2 = umdrehen(h2)
 h3 = umdrehen(h3)
 
 ! to change " " to "0"
-write(md5,'(4(z8))') h0,h1,h2,h3
-!write(md5,'(4(z8.8))') h0,h1,h2,h3
+!write(md5,'(4(z8))') h0,h1,h2,h3
+write(md5,'(4(z8.8))') h0,h1,h2,h3
 return
 
 end function md5
