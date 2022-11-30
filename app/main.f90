@@ -16,10 +16,11 @@ program main
   use day1615_mod, only: day1615
   use day1616_mod, only: day1616
   use day1617_mod, only: day1617
+  use day1618_mod, only: day1618
   use day1622_mod, only: day1622
   implicit none
 
-  goto 17
+  goto 18
   01 call day1601('./inp/01/input.txt')
   02 call day1602('./inp/02/input.txt')
   03 call day1603('./inp/03/input.txt')
@@ -37,7 +38,8 @@ program main
   15 call day1615('inp/15/input.txt') ! test.txt
   16 call day1616('10111011111001111', 272, 35651584) 
   17 call day1617('dmypynyp') ! 'ihgpwlah', 'kglvqrro', 'ulqzkmiv'
-  stop
+  18 call day1618('inp/18/input.txt') ! test.txt
+
   22 call day1622('inp/22/input.txt') ! test.txt
 
 end program main
