@@ -21,8 +21,7 @@ contains
     subroutine day1619(nelf)
         integer, intent(in) :: nelf
         type(elefant_t) :: circle
-        integer :: ans1, i, n, ielim, ans2
-        integer, allocatable :: arr(:)
+        integer :: ans1, ans2
 
         circle = elefant_t(nelf)
         do
@@ -34,6 +33,39 @@ contains
         print '("Answer 19/1 ",i0,l2)', ans1, ans1==1841611 
 
         ! Part Two (O(N^2) not very efficient)
+        !ans2 = part2_bruteforce(nelf)
+        ans2 = part2_analytical(nelf)
+        print *, 'Ans 2',ans2, ans2==1423634
+    end subroutine
+
+
+    function part2_analytical(nelf) result(ans)
+        integer, intent(in) :: nelf
+        integer :: ans
+
+        integer ::  pow
+
+        pow = 1
+        do
+            if (pow*3 > nelf) exit
+            pow = pow*3
+        end do
+
+        ans = nelf-pow
+        if (ans >= pow) then
+            ans =  pow + 2*(ans-pow)
+        end if
+        if (ans==0) ans = nelf
+    end function
+
+
+    function part2_bruteforce(nelf) result(ans)
+        integer, intent(in) :: nelf
+        integer :: ans
+
+        integer :: i, n, ielim
+        integer, allocatable :: arr(:)
+
         allocate(arr(nelf))
         do i=1, nelf
             arr(i) = i
@@ -46,12 +78,10 @@ contains
             if (ielim > i) i = i + 1
             if (i>n) i = 1
             if (n==1) exit
-            if (mod(n,10000)==0) print *, 'remain ',n, i
+            !if (mod(n,10000)==0) print *, 'remain ',n, i
         end do
-        ans2 = arr(1)
-        print *, 'Ans 2',ans2
-
-    end subroutine
+        ans = arr(1)
+    end function
 
 
     function get_index_across(i, n) result(iacross)
