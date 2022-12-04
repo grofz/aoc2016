@@ -19,6 +19,7 @@ program main
   use day1618_mod, only: day1618
   use day1619_mod, only: day1619
   use day1620_mod, only: day1620
+  use day1621_mod, only: day1621
   use day1622_mod, only: day1622
   use day1623_mod, only: day1623
   implicit none
@@ -44,6 +45,7 @@ program main
   18 call day1618('inp/18/input.txt') ! test.txt
   19 call day1619(3017957)
   20 call day1620('inp/20/input.txt')
+  21 call day1621('inp/21/input.txt')
   22 call day1622('inp/22/input.txt') ! test.txt
   23 call day1623('inp/23/input.txt') 
 
