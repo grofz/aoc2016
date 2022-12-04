@@ -18,6 +18,7 @@ module day1612_mod
         integer :: regs(4)=0
         integer :: ip=1
         logical :: isdebug = .false.
+        integer, allocatable :: bp(:)
     contains
         procedure :: step => assembunny_step
         procedure :: run => assembunny_run
@@ -26,8 +27,8 @@ module day1612_mod
         module procedure assembunny_new
     end interface
 
-    integer, parameter :: OP_CPY=1, OP_INC=2, OP_DEC=3, OP_JNZ=4, OP_TGL=5
-    character(len=3), parameter :: OP_CHARS(5) = ['cpy','inc','dec','jnz','tgl']
+    integer, parameter :: OP_CPY=1, OP_INC=2, OP_DEC=3, OP_JNZ=4, OP_TGL=5, OP_OUT=6
+    character(len=3), parameter :: OP_CHARS(6) = ['cpy','inc','dec','jnz','tgl','out']
 
 contains
 
@@ -114,7 +115,7 @@ contains
         select case(new%opcode)
         case(OP_CPY, OP_JNZ) ! two-argument instructions
             if (size(words)/=3) error stop 'instruction_new - two arguments expected'
-        case(OP_INC, OP_DEC, OP_TGL) ! one-argument instructions
+        case(OP_INC, OP_DEC, OP_TGL, OP_OUT) ! one-argument instructions
             if (size(words)/=2) error stop 'instruction_new - just one argument expected'
         end select
     end function instruction_new
@@ -154,6 +155,13 @@ contains
         case(OP_DEC)
             if (ins%absmode(1)) error stop 'step - inc argument must reference a register'
             this%regs(ins%args(1)) = this%regs(ins%args(1)) - 1
+        case(OP_OUT)
+            if (ins%absmode(1)) then
+                val = ins%args(1)
+            else
+                val = this%regs(ins%args(1))
+            end if
+            print '("Signal output ",i0,5x,4(i0,1x))', val, this%regs
         case(OP_JNZ)
             if (ins%absmode(1)) then
                 val = ins%args(1)
@@ -209,6 +217,12 @@ contains
 
         do
             if (this%ip<1 .or. this%ip>size(this%list)) exit
+            if (allocated(this%bp)) then
+                if (findloc(this%bp, this%ip, dim=1)/=0) then
+                    print '("BP=",i0,"  A-D=",4(i0,1x))', this%ip, this%regs
+                    exit
+                end if
+            end if
             call this%step()
            !print '("IP=",i0,"  A-D=",4(i0,1x))', this%ip, this%regs
         end do

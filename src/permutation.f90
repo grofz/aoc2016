@@ -141,9 +141,9 @@
       if (cnt /= factorial(n)) error stop 'permutate - wrong number of permutations'
 
     contains
-      subroutine output(arr)
-        integer, intent(in) :: arr(:)
-        print '(10(i3,1x))', arr
+      subroutine output(arrloc)
+        integer, intent(in) :: arrloc(:)
+        print '(10(i3,1x))', arrloc
         cnt = cnt + 1
       end subroutine
     end subroutine permutate
