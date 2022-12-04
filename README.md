@@ -23,6 +23,6 @@ Solutions in Fortran
 - 20: Firewall Rules
 - 21: Scrambled Letters and Hash
 - 22: Grid Computing
-- 23: Safe Cracking (TO-DO)
-- 24: Air Duct Spelunking (TO-DO)
-- 25: Clock Signal (TO-DO)
+- 23: Safe Cracking
+- 24: Air Duct Spelunking
+- 25: Clock Signal
